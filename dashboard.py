@@ -67,35 +67,44 @@ if 'pred_df' not in st.session_state:
     st.session_state['pred_df'] = setup_df(pd.read_csv('full_fantasy_predictions_2020'), False) 
 
 if 'current_df' not in st.session_state:
-    st.session_state['current_df'] = setup_df(pd.read_csv('full_fantasy_predictions_2024'), True) 
+    st.session_state['current_df'] = setup_df(pd.read_csv('full_fantasy_predictions_2024_with_week_17'), True) 
+    # st.session_state['current_df']['actual'] = 0
 
 class PredictionDashboard(BaseModel):
     mobile: bool = False
     current: bool = True
+    with_intro: bool = False
 
-    @property
-    def pred_df(self) -> pd.DataFrame:
-        if self.current:
+    
+    def pred_df(self, current: bool) -> pd.DataFrame:
+        if current:
             return st.session_state['current_df']
         else:
             return st.session_state['pred_df']
     
     def run_dashboard(self):
-        st.write(INTRO)
+        if self.with_intro:
+            st.write(INTRO)
         models = st.multiselect('Models to Show', metric_columns, default=['boosting predicted points'])
         if not self.current:
-            week = st.selectbox('Week', range(5, 18))
+            week = st.selectbox('Week', ['2024 Week 17'] + [f'2020 Week {i}' for i in range(5, 18)])
+            if '2024' in week:
+                week = None
+                current = True
+            else:
+                week = int(week.split(' ')[2])
+                current = False
         else:
             week = None
         position = st.selectbox(
             'Position', ['QB', 'RB', 'WR', 'TE']
         )
         df = get_filtered_df(
-            self.pred_df,
+            self.pred_df(current=current),
             week=week,
             position=position,
             models=models,
-            actual=(not self.current)
+            actual=True
         ).copy()
         df.index = df['Name']
         df = df.drop('Name', axis=1)
@@ -103,4 +112,4 @@ class PredictionDashboard(BaseModel):
         st.dataframe(df, use_container_width=True)
 
 if __name__ == '__main__':
-    PredictionDashboard(current=True).run_dashboard()
+    PredictionDashboard(current=False).run_dashboard()
