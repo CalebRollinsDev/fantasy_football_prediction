@@ -46,6 +46,7 @@ def setup_df(df, current):
         new_df['Name'] = new_df['player_id']
     else:
         new_df['Name'] = new_df['player_id'].apply(lambda x: x[:-3])
+    new_df['salary'] = new_df['salary'] * 100
     return new_df
 
 def get_filtered_df(df, week=None, position=None, column_filters=None, models=None, actual: bool = True):
